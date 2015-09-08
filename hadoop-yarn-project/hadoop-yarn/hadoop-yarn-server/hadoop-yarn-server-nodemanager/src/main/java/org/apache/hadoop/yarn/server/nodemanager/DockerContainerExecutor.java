@@ -36,6 +36,7 @@ import org.apache.hadoop.util.Shell;
 import org.apache.hadoop.util.Shell.ShellCommandExecutor;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
+import org.apache.hadoop.yarn.api.ApplicationConstants.Environment;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.factory.providers.RecordFactoryProvider;
@@ -52,6 +53,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -61,6 +63,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.net.InetSocketAddress;
+
 import static org.apache.hadoop.fs.CreateFlag.CREATE;
 import static org.apache.hadoop.fs.CreateFlag.OVERWRITE;
 
@@ -192,7 +195,7 @@ public class DockerContainerExecutor extends ContainerExecutor {
     lfs.util().copy(nmPrivateTokensPath, tokenDst);
 
 
-
+    String hadoopConfMount = toMount(Arrays.asList(System.getenv().get("HADOOP_CONF_DIR")));  // XXXXX: hjk41: pass in HADOOP_CONF_DIR
     String localDirMount = toMount(localDirs);
     String logDirMount = toMount(logDirs);
     String containerWorkDirMount = toMount(Collections.singletonList(containerWorkDir.toUri().getPath()));
@@ -201,9 +204,11 @@ public class DockerContainerExecutor extends ContainerExecutor {
         .append(" ")
         .append("run")
         .append(" ")
+        .append(" -e HADOOP_CONF_DIR ")  // XXXXX: hjk41: pass in HADOOP_CONF_DIR
         .append("--rm --net=host")
         .append(" ")
         .append(" --name " + containerIdStr)
+        .append(hadoopConfMount)   // XXXXX: hjk41: pass in HADOOP_CONF_DIR
         .append(localDirMount)
         .append(logDirMount)
         .append(containerWorkDirMount)

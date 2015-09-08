@@ -193,6 +193,10 @@ public class Client {
   private static final String log4jPath = "log4j.properties";
 
   public static final String SCRIPT_PATH = "ExecScript";
+  
+  // docker image names for am and container
+  public String amDockerImageName = "";
+  public String containerDockerImageName = "";
 
   /**
    * @param args Command line arguments 
@@ -287,6 +291,9 @@ public class Client {
             + " will be allocated, \"\" means containers"
             + " can be allocated anywhere, if you don't specify the option,"
             + " default node_label_expression of queue will be used.");
+    
+    opts.addOption("am_docker_image", true, "Docker image for the AM, need to have Java and Hadoop environment");
+    opts.addOption("container_docker_image", true, "Docker image for the containers, used to run shell commands");
   }
 
   /**
@@ -398,6 +405,8 @@ public class Client {
     containerVirtualCores = Integer.parseInt(cliParser.getOptionValue("container_vcores", "1"));
     numContainers = Integer.parseInt(cliParser.getOptionValue("num_containers", "1"));
     
+    amDockerImageName = cliParser.getOptionValue("am_docker_image", "");
+    containerDockerImageName = cliParser.getOptionValue("container_docker_image", "");
 
     if (containerMemory < 0 || containerVirtualCores < 0 || numContainers < 1) {
       throw new IllegalArgumentException("Invalid no. of containers or container memory/vcores specified,"
@@ -611,13 +620,19 @@ public class Client {
     }
 
     env.put("CLASSPATH", classPathEnv.toString());
+    
+    // set docker image name if specified
+    if (amDockerImageName != "") {
+    	env.put(YarnConfiguration.NM_DOCKER_CONTAINER_EXECUTOR_IMAGE_NAME, amDockerImageName);
+    }
 
     // Set the necessary command to execute the application master 
     Vector<CharSequence> vargs = new Vector<CharSequence>(30);
 
     // Set java executable command 
     LOG.info("Setting up app master command");
-    vargs.add(Environment.JAVA_HOME.$$() + "/bin/java");
+    //vargs.add(Environment.JAVA_HOME.$$() + "/bin/java");
+    vargs.add("java");
     // Set Xmx based on am memory size
     vargs.add("-Xmx" + amMemory + "m");
     // Set class name 
@@ -636,6 +651,9 @@ public class Client {
     }			
     if (debugFlag) {
       vargs.add("--debug");
+    }
+    if (containerDockerImageName != "") {
+    	vargs.add("--container_docker_image " + containerDockerImageName);
     }
 
     vargs.add("1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/AppMaster.stdout");

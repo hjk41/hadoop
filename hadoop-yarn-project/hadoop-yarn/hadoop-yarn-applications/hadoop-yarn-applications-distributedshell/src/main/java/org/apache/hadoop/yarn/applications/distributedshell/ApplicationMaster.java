@@ -277,6 +277,7 @@ public class ApplicationMaster {
   private final String linux_bash_command = "bash";
   private final String windows_command = "cmd /c";
 
+  private String containerDockerImageName = "";
   /**
    * @param args Command line args
    */
@@ -362,6 +363,7 @@ public class ApplicationMaster {
         "No. of containers on which the shell command needs to be executed");
     opts.addOption("priority", true, "Application Priority. Default 0");
     opts.addOption("debug", false, "Dump out debug information");
+    opts.addOption("container_docker_image", true, "Docker image name for containers");
 
     opts.addOption("help", false, "Print usage");
     CommandLine cliParser = new GnuParser().parse(opts, args);
@@ -390,6 +392,8 @@ public class ApplicationMaster {
     if (cliParser.hasOption("debug")) {
       dumpOutDebugInfo();
     }
+    
+    containerDockerImageName = cliParser.getOptionValue("container_docker_image", "");
 
     Map<String, String> envs = System.getenv();
 
@@ -461,6 +465,10 @@ public class ApplicationMaster {
       }
     }
 
+    if (containerDockerImageName != "") {
+    	shellEnv.put(YarnConfiguration.NM_DOCKER_CONTAINER_EXECUTOR_IMAGE_NAME, containerDockerImageName);
+    }
+    
     if (envs.containsKey(DSConstants.DISTRIBUTEDSHELLSCRIPTLOCATION)) {
       scriptPath = envs.get(DSConstants.DISTRIBUTEDSHELLSCRIPTLOCATION);
 
